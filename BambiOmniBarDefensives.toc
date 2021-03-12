@@ -1,0 +1,5 @@
+## Interface: 90000
+## Title: Bambi's OmniBar for Arena Defensives
+## Author: Bambi
+## Version: 9.0
+BambiOmniBarDefensives.lua
