@@ -1,4 +1,4 @@
---added to github
+--added to github 2
 
 
 local Cooldowns = {
