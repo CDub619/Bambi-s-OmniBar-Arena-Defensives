@@ -717,6 +717,7 @@ function OmniDef:ARENA_OPPONENT_UPDATE(event, unit, type)
 	if type == "seen" then
 		self:CreateIcons(unit, spec)
 		self:SetIcons(unit)
+		self:UpdateAlpha(unit, 0.9)
 	-- enemy stealth
 	elseif type == "unseen" then
 		self:UpdateAlpha(unit, 0.5)
@@ -753,7 +754,7 @@ function OmniDef:CreateIcons(unit, spec)
 	for i, v in ipairs(Cooldowns) do
 		if v.specID and v.specID[1] == spec then -- figure a way out to have this be set for 1, 3 specs or class
 			j = j + 1
-				-- Create all the Spells = {} we will check , the create the  arena1 = {}, arena2 = {}, arena3 = {} use tblinsert
+				-- Create all the Spells = {} we will check ,
 			icons[unit][j] = CreateFrame("Frame", "OmniDef"..j..unit, icons[unit])
 			icons[unit][j]:ClearAllPoints()
 			icons[unit][j]:SetHeight(hieght)
@@ -818,13 +819,11 @@ function OmniDef:SetIcons(unit)
 				icons[unit][j]:ClearAllPoints()
 				icons[unit][j]:SetParent(relativeFrame)
 				icons[unit][j]:SetFrameStrata("HIGH")
-				icons[unit][j]:SetAlpha(.9)
 				icons[unit][j]:SetPoint(point, relativeFrame, relativePoint, x, y)
 				collast = j
 			else
 				icons[unit][j]:SetParent(relativeFrame)
 				icons[unit][j]:SetFrameStrata("HIGH")
-				icons[unit][j]:SetAlpha(.9)
 				icons[unit][j]:SetPoint("BOTTOMLEFT", icons[unit][(collast)], "BOTTOMRIGHT", x1, y1)
 				collast = j
 			end
@@ -860,7 +859,7 @@ function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 		for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end
 		duration = unitCDs[spell][1]
 	  observed = unitCDs[spell][2]
-	  charges = unitCDs[spell][3]
+	  charges  = unitCDs[spell][3]
 		expiration = GetTime() + duration
 		time = GetTime()
 		if observed and OmniDef:observed(unit, spell) then
