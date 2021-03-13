@@ -619,21 +619,83 @@ local Cooldowns = {
 
 }
 
-local unitCDs = {
-								[8122] = {50 , true, nil} -- duration, observed, charges
-}
+local UIParent = UIParent -- it's faster to keep local references to frequently used global vars
+local UnitAura = UnitAura
+local UnitBuff = UnitBuff
+local UnitClass = UnitClass
+local UnitExists = UnitExists
+local UnitIsPlayer = UnitIsPlayer
+local UnitIsUnit = UnitIsUnit
+local UnitIsEnemy = UnitIsEnemy
+local UnitHealth = UnitHealth
+local UnitName = UnitName
+local UnitGUID = UnitGUID
+local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+local IsInInstance = IsInInstance
+local GetArenaOpponentSpec = GetArenaOpponentSpec
+local GetPlayerInfoByGUID = GetPlayerInfoByGUID
+local GetInspectSpecialization = GetInspectSpecialization
+local GetSpellInfo = GetSpellInfo
+local GetTime = GetTime
+local GetName = GetName
+local GetNumGroupMembers = GetNumGroupMembers
+local GetNumArenaOpponents = GetNumArenaOpponents
+local GetInstanceInfo = GetInstanceInfo
+local GetZoneText = GetZoneText
+local SetPortraitToTexture = SetPortraitToTexture
+local ipairs = ipairs
+local pairs = pairs
+local next = next
+local type = type
+local select = select
+local strsplit = strsplit
+local strfind = string.find
+local strmatch = string.match
+local tblinsert = table.insert
+local tblremove= table.remove
+local mathfloor = math.floor
+local mathabs = math.abs
+local bit_band = bit.band
+local tblsort = table.sort
+local Ctimer = C_Timer.After
+local substring = string.sub
+local CLocData = C_LossOfControl.GetActiveLossOfControlData
+local unpack = unpack
+local SetScript = SetScript
+local SetUnitDebuff = SetUnitDebuff
+local SetOwner = SetOwner
+local OnEvent = OnEvent
+local CreateFrame = CreateFrame
+local SetTexture = SetTexture
+local SetNormalTexture = SetNormalTexture
+local SetSwipeTexture = SetSwipeTexture
+local SetCooldown = SetCooldown
+local SetAlpha, SetPoint, SetParent, SetFrameLevel, SetDrawSwipe, SetSwipeColor, SetScale, SetHeight, SetWidth, SetDesaturated, SetVertexColor = SetAlpha, SetPoint, SetParent, SetFrameLevel, SetDrawSwipe, SetSwipeColor,  SetScale, SetHeight, SetWidth, SetDesaturated, SetVertexColor
+local ClearAllPoints = ClearAllPoints
+local GetParent = GetParent
+local GetFrameLevel = GetFrameLevel
+local GetDrawSwipe = GetDrawSwipe
+local GetDrawLayer = GetDrawLayer
+local GetAlpha = GetAlpha
+local Hide = Hide
+local Show = Show
+local IsShown = IsShown
+local IsVisible = IsVisible
+local playerGUID
+local print = print
+local debug = false -- type "/lc debug on" if you want to see UnitAura info logged to the console
+local Masque
 
-
+local unitCD = { }
 local icons = { }
 local hieght = 40
 local width = 40
+local glossEnabled = false
 
 local OmniDef = CreateFrame('Frame')
 OmniDef:SetScript("OnEvent", function(self, event, unit, arg1)
 	if event == 'COMBAT_LOG_EVENT_UNFILTERED' then
-				OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
-	elseif event == "UNIT_AURA" then
-				OmniDef:UNIT_AURA(unit)
+		OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 	elseif event == "ARENA_OPPONENT_UPDATE" then
 		OmniDef:ARENA_OPPONENT_UPDATE(event, unit, arg1)
 	elseif event == "ARENA_PREP_OPPONENT_SPECIALIZATIONS" then
@@ -653,6 +715,9 @@ function OmniDef:ZONE_CHANGED_NEW_AREA()
 	local _, instanceType = IsInInstance()
 	-- check if we are entering or leaving an arena
 	if instanceType == "arena" then
+		if self.test then
+			OmniDef:toggletest("player")
+		end
 		self:JoinedArena()
 	elseif instanceType ~= "arena" and self.instanceType == "arena" then
 		self:LeftArena()
@@ -672,7 +737,6 @@ function OmniDef:JoinedArena()
 	-- special arena event
 	self:RegisterEvent("ARENA_OPPONENT_UPDATE")
 	self:RegisterEvent("ARENA_PREP_OPPONENT_SPECIALIZATIONS")
-	self:RegisterUnitEvent('UNIT_AURA', "arena1", "arena2", "arena3")
 	self:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
 	local numOpps = GetNumArenaOpponentSpecs()
 	if (numOpps and numOpps > 0) then
@@ -682,22 +746,23 @@ end
 
 function OmniDef:LeftArena()
 	-- reset units
-	self:ResetUnit(unit)
+	self:ResetUnits()
 	-- unregister combat events
 	self:UnregisterAllEvents()
 	self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 	self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
 end
 
-function OmniDef:ResetUnit(unit, module)
+function OmniDef:ResetUnits()
 	-- reset icons and hide
-	for i = 1, 3 do
+	if self.test then units = 1 else units = 3 end
+	for i = 1, units do
 		local unit = "arena"..i
+		if self.test then unit = "player" end
 		if icons[unit] then
-			print("i : "..i)
 			icons[unit]:ClearAllPoints()
 			icons[unit]:Hide()
-			print("#icons : "..#icons[unit])
+			print(unit.." #icons : "..#icons[unit])
 			for i = 1, #icons[unit] do
 				icons[unit][i]:ClearAllPoints()
 				icons[unit][i]:Hide()
@@ -708,6 +773,7 @@ function OmniDef:ResetUnit(unit, module)
 		end
 	end
 	 --reset the spell tables
+	 unitCD = nil
 end
 
 function OmniDef:ARENA_OPPONENT_UPDATE(event, unit, type)
@@ -717,7 +783,7 @@ function OmniDef:ARENA_OPPONENT_UPDATE(event, unit, type)
 	if type == "seen" then
 		self:CreateIcons(unit, spec)
 		self:SetIcons(unit)
-		self:UpdateAlpha(unit, 0.9)
+		self:UpdateAlpha(unit, 1)
 	-- enemy stealth
 	elseif type == "unseen" then
 		self:UpdateAlpha(unit, 0.5)
@@ -749,35 +815,54 @@ function OmniDef:CreateIcons(unit, spec)
 	--Create Icons for the Unit to Watch and Spell Tables
 	if icons[unit].spec then return end --MAYBE ISSUE!!!!
 	print("Creating OmniDef: "..unit..":"..spec)
-	local j = 0
-	icons[unit].spec = spec
-	for i, v in ipairs(Cooldowns) do
-		if v.specID and v.specID[1] == spec then -- figure a way out to have this be set for 1, 3 specs or class
-			j = j + 1
-				-- Create all the Spells = {} we will check ,
-			icons[unit][j] = CreateFrame("Frame", "OmniDef"..j..unit, icons[unit])
-			icons[unit][j]:ClearAllPoints()
-			icons[unit][j]:SetHeight(hieght)
-			icons[unit][j]:SetWidth(width)
-			icons[unit][j].texture = icons[unit][j]:CreateTexture(icons[unit][j], 'BACKGROUND')
-			icons[unit][j].texture:SetAllPoints(icons[unit][j])
-			icons[unit][j].texture:SetTexture(GetSpellTexture(v.spell))
-			icons[unit][j].count = icons[unit][j]:CreateFontString(icons[unit][j],"ARTWORK");
-			icons[unit][j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
-			icons[unit][j].count:SetPoint("TOPRIGHT", 0, 8);
-			icons[unit][j].count:SetJustifyH("RIGHT");
-			icons[unit][j].cooldown = CreateFrame("Cooldown", nil, icons[unit][j], 'CooldownFrameTemplate')
-			icons[unit][j].cooldown:SetAllPoints(icons[unit][j])
-			icons[unit][j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
-			icons[unit][j].cooldown:SetDrawSwipe(true)
-			icons[unit][j].cooldown:SetDrawEdge(false)
-			icons[unit][j].cooldown:SetSwipeColor(0, 0, 0, alpha)
-			icons[unit][j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
-			icons[unit][j].cooldown:SetDrawBling(false)
-			icons[unit][j].observed = v.observed
-			icons[unit][j].spell = v.spell
-			icons[unit][j].duration = v.duration
-			icons[unit][j].charges = v.charges
+		if unitCD == nil then unitCD = { } end
+		local j = 0
+		icons[unit].spec = spec
+		for i, v in ipairs(Cooldowns) do
+			if v.specID  then
+				for _, specs in ipairs (v.specID) do
+					if specs == spec then
+					j = j + 1
+					icons[unit][j] = CreateFrame("Frame", "OmniDef"..j..unit, icons[unit])
+					icons[unit][j]:ClearAllPoints()
+					icons[unit][j]:SetHeight(hieght)
+					icons[unit][j]:SetWidth(width)
+					icons[unit][j].texture = icons[unit][j]:CreateTexture(icons[unit][j], 'BACKGROUND')
+					icons[unit][j].texture:SetAllPoints(icons[unit][j])
+					icons[unit][j].texture:SetTexture(GetSpellTexture(v.spell))
+					icons[unit][j].texture:SetTexCoord(0, 1, 0, 1)
+					--icons[unit][j].texture:SetTexCoord(0.07, 0.9, 0.07, 0.9) -- noborder
+					if Gladius and glossEnabled then
+						icons[unit][j].gloss = CreateFrame("Button", "OmniDef"..j..unit.."gloss", icons[unit][j])
+						icons[unit][j].gloss:SetNormalTexture("Interface\\AddOns\\Gladius\\Images\\Gloss")
+						icons[unit][j].gloss:SetHeight(icons[unit][j]:GetHeight() + icons[unit][j]:GetHeight() * 0.4)
+						icons[unit][j].gloss:SetWidth(icons[unit][j]:GetWidth() + icons[unit][j]:GetWidth() * 0.35)
+						icons[unit][j].gloss:SetAlpha(0.4)
+						icons[unit][j].gloss:SetScale(0.99)
+						icons[unit][j].gloss:ClearAllPoints()
+						icons[unit][j].gloss:SetPoint("CENTER", 0, 0)
+					end
+					--icons[unit][j].gloss.SetAllPoints(icons[unit][j])
+					icons[unit][j].count = icons[unit][j]:CreateFontString(icons[unit][j],"ARTWORK");
+					icons[unit][j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+					icons[unit][j].count:SetPoint("TOPRIGHT", 0, 8);
+					icons[unit][j].count:SetJustifyH("RIGHT");
+					icons[unit][j].cooldown = CreateFrame("Cooldown", nil, icons[unit][j], 'CooldownFrameTemplate')
+					icons[unit][j].cooldown:SetAllPoints(icons[unit][j])
+					icons[unit][j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
+					icons[unit][j].cooldown:SetDrawSwipe(true)
+					icons[unit][j].cooldown:SetDrawEdge(false)
+					icons[unit][j].cooldown:SetSwipeColor(0, 0, 0, 1)
+					icons[unit][j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
+					icons[unit][j].cooldown:SetDrawBling(false)
+					icons[unit][j].observed = v.observed
+					icons[unit][j].spell = v.spell
+					icons[unit][j].duration = v.duration
+					icons[unit][j].charges = v.charges
+					unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges}
+					break
+				end
+			end
 		end
 	end
 end
@@ -794,12 +879,15 @@ function OmniDef:observed(unit, spell)
 end
 
 function OmniDef:SetIcons(unit)
-	local point, relativeFrame, relativePoint, x, y, x1, y1, id, collast
-	if strfind(unit, "1") then id = 1 elseif strfind(unit, "2") then id = 2 elseif strfind(unit, "3") then id = 3 end
+	local point, relativeFrame, relativePoint, x, y, x1, y1, collast, id
+	local spacing = strmatch(unit, '%d%d%d') or 1
+	if unit == "player" and Gladius then relativeFrame = "GladiusRacialFramearena1"; print("|cff00ccffBambi's OmniBar Defensives|r", ": Gladius Test Mode Must Also Be Enabled if On") else relativeFrame = UIParent end
 	if Gladius then
-		point, relativeFrame, relativePoint, x, y, x1, y1 = "TOPLEFT", "GladiusRacialFramearena"..id, "TOPRIGHT", 40, 0, 0, 0
+		if strfind(unit, "1") then id = 1 elseif strfind(unit, "2") then id = 2 elseif strfind(unit, "3") then id = 3 end
+		if id then relativeFrame = "GladiusRacialFramearena"..id end
+		point, relativePoint, x, y, x1, y1 = "TOPLEFT", "TOPRIGHT", 40, 0, 0, 0
 	else
-		point, relativeFrame, relativePoint, x, y, x1, y1 = "CENTER", UIParent, "CENTER", 850, 135-75*id, 0, 0
+		point, relativeFrame, relativePoint, x, y, x1, y1 = "CENTER", UIParent, "CENTER", 850, 135 - 75 * spacing, 0, 0
 	end
  	for j = 1, #icons[unit] do
 		if icons[unit][j].charges then
@@ -855,20 +943,67 @@ end
 function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 	local _, event, _, sourceGUID, sourceName, sourceFlags, _,_,_,_,_, spell, spellName = CombatLogGetCurrentEventInfo()
 	local unit, expiration, duration, observed, charges, time
-	if (event == "SPELL_CAST_SUCCESS") and unitCDs[spell] and ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) then
-		for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end
-		duration = unitCDs[spell][1]
-	  observed = unitCDs[spell][2]
-	  charges  = unitCDs[spell][3]
-		expiration = GetTime() + duration
-		time = GetTime()
-		if observed and OmniDef:observed(unit, spell) then
-		OmniDef:SetIcons(unit)
+	if ((event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0) or (self.test and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED")) then
+		if unitCD[spell] then
+			if ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) or self.test then
+				if not self.test then for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end else unit = "player" end
+				duration = unitCD[spell].d
+			  observed = unitCD[spell].o
+			  charges  = unitCD[spell].c
+				expiration = GetTime() + duration
+				time = GetTime()
+				if observed and OmniDef:observed(unit, spell) then
+				OmniDef:SetIcons(unit)
+				end
+				OmniDef:SetInfo(unit, spell, time, duration, expiration)
+			end
 		end
-		OmniDef:SetInfo(unit, spell, time, duration, expiration)
 	end
 end
 
 
-function OmniDef:UNIT_AURA(unit)
+function OmniDef:toggletest(unit)
+	if not self.test then
+		print("|cff00ccffBambi's OmniBar Defensives|r", ": Test Mode On")
+		if icons[unit] == nil then
+			icons[unit] = CreateFrame("Frame", "OmniDef"..unit)
+		end
+		local currentSpec = GetSpecialization()
+   	local spec, _ = GetSpecializationInfo(currentSpec)
+		OmniDef:CreateIcons(unit, spec)
+		OmniDef:SetIcons(unit)
+		self:RegisterEvent('COMBAT_LOG_EVENT_UNFILTERED')
+	else
+		print("|cff00ccffBambi's OmniBar Defensives|r", ": Test Mode Off")
+		self:ResetUnits()
+		-- unregister combat events
+		self:UnregisterAllEvents()
+		self:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+		self:RegisterEvent("PLAYER_ENTERING_WORLD", "ZONE_CHANGED_NEW_AREA")
+	end
+	if not self.test then
+		self.test = true
+	else
+		self.test = nil
+	end
+end
+
+SLASH_OMNIDEF1 = "/od"
+SLASH_OMNIDEF2 = "/omnidef"
+
+local SlashCmd = {}
+function SlashCmd:test()
+	OmniDef:toggletest("player")
+end
+
+SlashCmdList["OMNIDEF"] = function(cmd)
+	local args = {}
+	for word in cmd:lower():gmatch("%S+") do
+		tinsert(args, word)
+	end
+	if SlashCmd[args[1]] then
+		SlashCmd[args[1]](unpack(args))
+	else
+		print("|cff00ccffBambi's OmniBar Defensives|r", ": Type \"/od test\" for testing.")
+	end
 end
