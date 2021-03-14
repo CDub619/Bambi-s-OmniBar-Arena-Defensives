@@ -109,9 +109,9 @@ local Cooldowns = {
 	    {spell = 32375, duration = 45, class = "PRIEST" ,  observed = false }, -- Mass Dispel
 
 	        -- Discipline
-
-	        {spell = 8122, duration = 30, class = "PRIEST", specID = { 256, 257, 258 } ,  observed = false }, -- Psychic Scream
-	        {spell = 10060, duration = 120, class = "PRIEST", specID = { 256, 258 } ,  observed = false }, -- Power Infusion
+        {spell = 121536, duration = 20, class = "PRIEST", specID = { 256 }, charges = 3 ,  observed = false }, -- Shadow Word: Death
+	        {spell = 8122, spellalt = 17,  duration = 30, durationalt = 120, class = "PRIEST", specID = { 256, 257, 258 } ,  observed = true}, -- Psychic Scream
+	        --{spell = 10060, duration = 120, class = "PRIEST", specID = { 256, 258 } ,  observed = false }, -- Power Infusion
 	        {spell = 33206, duration = 180, class = "PRIEST", specID = { 256 } ,  observed = false }, -- Pain Suppression
 	        {spell = 34433, duration = 180, class = "PRIEST", specID = { 256, 258 } ,  observed = false }, -- Shadowfiend
 	            {spell = 123040, parent = 34433, duration = 60 ,  observed = false }, -- Mindbender (Discipline)
@@ -166,8 +166,9 @@ local Cooldowns = {
 	    {spell = 115750, duration = 90, class = "PALADIN" ,  observed = false }, -- Blinding Light
 
 	        -- Holy
+					{spell = 337852, duration = 45, class = "PALADIN", specID = { 65, 66 } ,  observed = false }, -- Divine Protection
 
-	        {spell = 498, duration = 60, class = "PALADIN", specID = { 65, 66 } ,  observed = false }, -- Divine Protection
+	        {spell = 498, duration = 60, class = "PALADIN", specID = { 65, 66 } ,  observed = true }, -- Divine Protection
 	        {spell = 6940, duration = 120, class = "PALADIN", specID = { 65, 66 }, charges = 2 ,  observed = false }, -- Blessing of Sacrifice
 	        {spell = 31821, duration = 180, class = "PALADIN", specID = { 65 } ,  observed = false }, -- Aura Mastery
 	        {spell = 105809, duration = 90, class = "PALADIN", specID = { 65 } ,  observed = false }, -- Holy Avenger
@@ -627,7 +628,6 @@ local UnitExists = UnitExists
 local UnitIsPlayer = UnitIsPlayer
 local UnitIsUnit = UnitIsUnit
 local UnitIsEnemy = UnitIsEnemy
-local UnitHealth = UnitHealth
 local UnitName = UnitName
 local UnitGUID = UnitGUID
 local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
@@ -636,6 +636,7 @@ local GetArenaOpponentSpec = GetArenaOpponentSpec
 local GetPlayerInfoByGUID = GetPlayerInfoByGUID
 local GetInspectSpecialization = GetInspectSpecialization
 local GetSpellInfo = GetSpellInfo
+local GetSpellTexture = GetSpellTexture
 local GetTime = GetTime
 local GetName = GetName
 local GetNumGroupMembers = GetNumGroupMembers
@@ -659,7 +660,6 @@ local bit_band = bit.band
 local tblsort = table.sort
 local Ctimer = C_Timer.After
 local substring = string.sub
-local CLocData = C_LossOfControl.GetActiveLossOfControlData
 local unpack = unpack
 local SetScript = SetScript
 local SetUnitDebuff = SetUnitDebuff
@@ -687,6 +687,7 @@ local debug = false -- type "/lc debug on" if you want to see UnitAura info logg
 local Masque
 
 local unitCD = { }
+local unitCDalt = { }
 local icons = { }
 local hieght = 40
 local width = 40
@@ -843,7 +844,7 @@ function OmniDef:CreateIcons(unit, spec)
 						icons[unit][j].gloss:SetPoint("CENTER", 0, 0)
 					end
 					--icons[unit][j].gloss.SetAllPoints(icons[unit][j])
-					icons[unit][j].count = icons[unit][j]:CreateFontString(icons[unit][j],"ARTWORK");
+					icons[unit][j].count = icons[unit][j]:CreateFontString(icons[unit][j],"OVERLAY");
 					icons[unit][j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
 					icons[unit][j].count:SetPoint("TOPRIGHT", 0, 8);
 					icons[unit][j].count:SetJustifyH("RIGHT");
@@ -852,6 +853,7 @@ function OmniDef:CreateIcons(unit, spec)
 					icons[unit][j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
 					icons[unit][j].cooldown:SetDrawSwipe(true)
 					icons[unit][j].cooldown:SetDrawEdge(false)
+					icons[unit][j].cooldown:SetFrameStrata("TOOLTIP");
 					icons[unit][j].cooldown:SetSwipeColor(0, 0, 0, 1)
 					icons[unit][j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
 					icons[unit][j].cooldown:SetDrawBling(false)
@@ -859,20 +861,16 @@ function OmniDef:CreateIcons(unit, spec)
 					icons[unit][j].spell = v.spell
 					icons[unit][j].duration = v.duration
 					icons[unit][j].charges = v.charges
-					unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges}
+					icons[unit][j].Maxcharges = v.charges
+					if v.spellalt then
+						if not v.observedalt then v.observedalt = v.observed end --always = v.observed
+						if not v.chargesalt then v.chargesalt = v.charges end
+						if not v.durationalt then v.durationalt = v.duration end
+						unitCDalt[v.spellalt] = {d = v.durationalt, o = v.observedalt, c = v.chargesalt, icon = j}
+					end
+						unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges, icon = j}
 					break
 				end
-			end
-		end
-	end
-end
-
-function OmniDef:observed(unit, spell)
-	for j = 1, #icons[unit] do
-		if spell == icons[unit][j].spell then
-			if icons[unit][j].observed == true then
-			icons[unit][j].observed = false
-			return true
 			end
 		end
 	end
@@ -881,7 +879,7 @@ end
 function OmniDef:SetIcons(unit)
 	local point, relativeFrame, relativePoint, x, y, x1, y1, collast, id
 	local spacing = strmatch(unit, '%d%d%d') or 1
-	if unit == "player" and Gladius then relativeFrame = "GladiusRacialFramearena1"; print("|cff00ccffBambi's OmniBar Defensives|r", ": Gladius Test Mode Must Also Be Enabled if On") else relativeFrame = UIParent end
+	if unit == "player" and Gladius then relativeFrame = "GladiusRacialFramearena1" else relativeFrame = UIParent end
 	if Gladius then
 		if strfind(unit, "1") then id = 1 elseif strfind(unit, "2") then id = 2 elseif strfind(unit, "3") then id = 3 end
 		if id then relativeFrame = "GladiusRacialFramearena"..id end
@@ -891,31 +889,44 @@ function OmniDef:SetIcons(unit)
 	end
  	for j = 1, #icons[unit] do
 		if icons[unit][j].charges then
-			if ( icons[unit][j].charges > 1 ) then
-				local countText = icons[unit][j].charges
-				if ( icons[unit][j].charges >= 100 ) then
-				 countText = BUFF_STACKS_OVERFLOW
-				end
 				icons[unit][j].count:Show();
-				icons[unit][j].count:SetText(countText)
-			else
-				icons[unit][j].count:Hide();
-			end
+				icons[unit][j].count:SetText(icons[unit][j].charges)
+		else
+			icons[unit][j].count:Hide();
 		end
 		if not icons[unit][j].observed then
-				if not collast then
+			if not collast then
 				icons[unit][j]:ClearAllPoints()
 				icons[unit][j]:SetParent(relativeFrame)
 				icons[unit][j]:SetFrameStrata("HIGH")
 				icons[unit][j]:SetPoint(point, relativeFrame, relativePoint, x, y)
 				collast = j
 			else
+				icons[unit][j]:ClearAllPoints()
 				icons[unit][j]:SetParent(relativeFrame)
 				icons[unit][j]:SetFrameStrata("HIGH")
 				icons[unit][j]:SetPoint("BOTTOMLEFT", icons[unit][(collast)], "BOTTOMRIGHT", x1, y1)
 				collast = j
 			end
 		end
+	end
+end
+
+function OmniDef:observed(unit, spell, icon)
+	if icons[unit][icon].observed == true then
+		icons[unit][icon].observed = false
+		--rrest charges on new observed spell
+		if unitCD[spell] then icons[unit][icon].charges = unitCD[spell].c; icons[unit][icon].Maxcharges = unitCD[spell].c end
+		if unitCDalt[spell] then icons[unit][icon].charges = unitCDalt[spell].c; icons[unit][icon].Maxcharges = unitCDalt[spell].c end
+		return true
+	end
+end
+
+function OmniDef:SetIcon(unit, spell, icon)
+	if spell and icon and icons[unit][icon].texture:GetTexture() ~= GetSpellTexture(spell) then
+		icons[unit][icon].texture:ClearAllPoints()
+		icons[unit][icon].texture:SetTexture(GetSpellTexture(spell))
+		icons[unit][icon].texture:SetAllPoints(icons[unit][icon])
 	end
 end
 
@@ -927,35 +938,53 @@ function OmniDef:UpdateAlpha(unit, alpha)
 	end
 end
 
-function OmniDef:SetInfo(unit, spell, time, duration, expiration)
+function OmniDef:SetInfo(unit, icon, time, duration, expiration)
 	if not icons[unit] then return end
-	for j = 1, #icons[unit] do
-		if spell == icons[unit][j].spell then
-			if not icons[unit][j].maxExpiration or (icons[unit][j].maxExpiration ~= icons[unit][j].maxexpiration) then
-			icons[unit][j].cooldown:SetCooldown(time, duration)
-			icons[unit][j].maxExpiration = expiration
-			return
-			end
+	if icons[unit][icon].charges then
+		icons[unit][icon].charges = icons[unit][icon].charges - 1
+		if icons[unit][icon].charges == 0 then
+			icons[unit][icon].count:Hide();
+			icons[unit][icon].count:SetText(icons[unit][icon].charges)
+		else
+			icons[unit][icon].count:Show();
+			icons[unit][icon].count:SetText(icons[unit][icon].charges)
 		end
+	end
+	--set timer for charge cooldowns
+	if icons[unit][icon].Maxcharges and icons[unit][icon].cooldown:GetCooldownDuration() == 0 then --charge fired for the first time
+		icons[unit][icon].cooldown:SetScript("OnCooldownDone", function(self) print("finsihed") end) --should be ctimer
+		icons[unit][icon].cooldown:SetCooldown(time, duration)
+		icons[unit][icon].maxExpiration = expiration
+		return
+	end
+	--set timer for cooldowns
+	if not icons[unit][icon].Maxcharges and (not icons[unit][icon].maxExpiration or (icons[unit][icon].maxExpiration ~= icons[unit][icon].maxexpiration)) then
+	icons[unit][icon].cooldown:SetCooldown(time, duration)
+	icons[unit][icon].maxExpiration = expiration
+	return
 	end
 end
 
 function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 	local _, event, _, sourceGUID, sourceName, sourceFlags, _,_,_,_,_, spell, spellName = CombatLogGetCurrentEventInfo()
-	local unit, expiration, duration, observed, charges, time
+	local unit, expiration, duration, observed, charges, time, count
+	local Spells = unitCD
 	if ((event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0) or (self.test and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED")) then
-		if unitCD[spell] then
+		if unitCD[spell] or unitCDalt[spell] then
+			if unitCDalt[spell] then Spells = unitCDalt end
 			if ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) or self.test then
 				if not self.test then for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end else unit = "player" end
-				duration = unitCD[spell].d
-			  observed = unitCD[spell].o
-			  charges  = unitCD[spell].c
+				duration = Spells[spell].d
+			  observed = Spells[spell].o
+			  icon  = Spells[spell].icon
 				expiration = GetTime() + duration
 				time = GetTime()
-				if observed and OmniDef:observed(unit, spell) then
-				OmniDef:SetIcons(unit)
+				if (observed and OmniDef:observed(unit, spell, icon)) then
+					OmniDef:SetIcon(unit, spell, icon)
+					OmniDef:SetIcons(unit)
 				end
-				OmniDef:SetInfo(unit, spell, time, duration, expiration)
+				OmniDef:SetIcon(unit, spell, icon)
+				OmniDef:SetInfo(unit, icon, time, duration, expiration, count)
 			end
 		end
 	end
@@ -967,6 +996,9 @@ function OmniDef:toggletest(unit)
 		print("|cff00ccffBambi's OmniBar Defensives|r", ": Test Mode On")
 		if icons[unit] == nil then
 			icons[unit] = CreateFrame("Frame", "OmniDef"..unit)
+		end
+		if Gladius then
+			print("|cff00ccffBambi's OmniBar Defensives|r", ": Gladius Enabled, Enable Gladius Test Mode")
 		end
 		local currentSpec = GetSpecialization()
    	local spec, _ = GetSpecializationInfo(currentSpec)
