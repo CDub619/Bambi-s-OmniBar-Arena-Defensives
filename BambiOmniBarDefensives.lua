@@ -515,7 +515,7 @@ local Cooldowns = {
 
 	        -- Frost
 
-	        {spell = 122, duration = 30, class = "MAGE", specID = { 64 }, charges = 2 ,  observed = true, hue = {1, 1, 0, false}, }, -- Frost Nova
+	        {spell = 122, spellalt = 212653, duration = 30, durationalt = 25, class = "MAGE", specID = { 64 }, charges = 2 , chargesalt= 3,  hue = {1, 1, 0, false}}, -- Frost Nova
 	        {spell = 12472, duration = 180, class = "MAGE", specID = { 64 } ,  observed = false }, -- Icy Veins
 	            {spell = 198144, parent = 12472, duration = 45 ,  observed = false }, -- Ice Form
 	        {spell = 31687, duration = 60, class = "MAGE", specID = { 64 } ,  observed = false }, -- Summon Water Elemental
@@ -697,6 +697,7 @@ local unitCDalt = { }
 local icons = { }
 local hieght = 40
 local width = 40
+local SwipeAlpha = .85
 local glossEnabled = false
 
 local OmniDef = CreateFrame('Frame')
@@ -835,6 +836,7 @@ function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 					frame = icons[unit]
 					expiration = GetTime() + duration
 					time = GetTime()
+				if count then OmniDef:countstarted(unit, spell , icon) end
 				if (observed and OmniDef:observed(unit, spell, icon)) then
 					OmniDef:SetIcon(unit, spell, icon)
 					OmniDef:SetIcons(unit)
@@ -842,7 +844,7 @@ function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 				if not frame[icon].alticon then
 					OmniDef:SetIcon(unit, spell, icon)
 				end
-				OmniDef:SetInfo(unit, icon, time, duration, expiration, count)
+				OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
 			end
 			if resets[spell] then
 				frame = icons[unit]
@@ -869,7 +871,6 @@ end
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 function OmniDef:CreateIcons(unit, spec)
 	--Create Icons for the Unit to Watch and Spell Tables
-	print(unit)
 	if not unit == "arena1" or not unit == "arena2" or not unit == "arena3" or not unit == "player" then return end
 	local frame = icons[unit]
 	if frame.spec then return end
@@ -903,7 +904,7 @@ function OmniDef:CreateIcons(unit, spec)
 						frame[j].gloss:SetPoint("CENTER", 0, 0)
 					end
 					--frame[j].gloss.SetAllPoints(frame[j])
-					frame[j].count = frame[j]:CreateFontString(frame[j],"OVERLAY");
+					frame[j].count = frame[j]:CreateFontString(nil, "OVERLAY");
 					frame[j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
 					frame[j].count:SetPoint("TOPRIGHT", 0, 8);
 					frame[j].count:SetJustifyH("RIGHT");
@@ -912,15 +913,19 @@ function OmniDef:CreateIcons(unit, spec)
 					frame[j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
 					frame[j].cooldown:SetDrawSwipe(true)
 					frame[j].cooldown:SetDrawEdge(false)
-					frame[j].cooldown:SetFrameStrata("TOOLTIP");
-					frame[j].cooldown:SetSwipeColor(0, 0, 0, 1)
+					frame[j].cooldown:SetSwipeColor(0, 0, 0, SwipeAlpha)
 					frame[j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
 					frame[j].cooldown:SetDrawBling(false)
+					frame[j].cooldowncount = frame[j].cooldown:CreateFontString(nil, "OVERLAY");
+					frame[j].cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+					frame[j].cooldowncount:SetPoint("TOPRIGHT", 0, 8);
+					frame[j].cooldowncount:SetJustifyH("RIGHT");
 					frame[j].observed = v.observed
 					frame[j].spell = v.spell
 					frame[j].duration = v.duration
 					frame[j].charges = v.charges
 					frame[j].Maxcharges = v.charges
+					frame[j].countstarted =false
 					if v.hue then
 						local c = v.hue
 						frame[j].hue = {c[1], c[2], c[3], c[4]} --Destaurate Icon
@@ -988,13 +993,19 @@ function OmniDef:SetIcons(unit)
 	end
 end
 
+function  OmniDef:countstarted(unit, spell , icon)
+	local frame = icons[unit]
+	if not frame[icon].countstarted then
+		if unitCD[spell] then frame[icon].charges = unitCD[spell].c; frame[icon].Maxcharges = unitCD[spell].c end
+		if unitCDalt[spell] then frame[icon].charges = unitCDalt[spell].c; frame[icon].Maxcharges = unitCDalt[spell].c end
+		frame[icon].countstarted = true
+	end
+end
+
 function OmniDef:observed(unit, spell, icon)
 	local frame = icons[unit]
 	if frame[icon].observed == true then
 		frame[icon].observed = false
-		--rrest charges on new observed spell
-		if unitCD[spell] then frame[icon].charges = unitCD[spell].c; frame[icon].Maxcharges = unitCD[spell].c end
-		if unitCDalt[spell] then frame[icon].charges = unitCDalt[spell].c; frame[icon].Maxcharges = unitCDalt[spell].c end
 		return true
 	end
 end
@@ -1025,9 +1036,13 @@ function OmniDef:SetResetChargeInfo(unit, icon, duration)
 		if count == 0 then
 			frame[icon].count:Hide();
 			frame[icon].count:SetText(count)
+			frame[icon].cooldowncount:Hide();
+			frame[icon].cooldowncount:SetText(count)
 		else
 			frame[icon].count:Show();
 			frame[icon].count:SetText(count)
+			frame[icon].cooldowncount:Show();
+			frame[icon].cooldowncount:SetText(count)
 		end
 	end
 	frame[icon].charges = count
@@ -1045,9 +1060,13 @@ function OmniDef:SetChargeInfo(unit, icon, time, duration, expiration)
 		if count == 0 then
 			frame[icon].count:Hide();
 			frame[icon].count:SetText(count)
+			frame[icon].cooldowncount:Hide();
+			frame[icon].cooldowncount:SetText(count)
 		else
 			frame[icon].count:Show();
 			frame[icon].count:SetText(count)
+			frame[icon].cooldowncount:Show();
+			frame[icon].cooldowncount:SetText(count)
 		end
 	end
 	frame[icon].charges = count
@@ -1060,11 +1079,11 @@ function OmniDef:SetChargeInfo(unit, icon, time, duration, expiration)
 	end
 end
 
-function OmniDef:SetInfo(unit, icon, time, duration, expiration, count)
+function OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
 	local frame = icons[unit]
-	if count then OmniDef:SetChargeInfo(unit, icon, time, duration, expiration); return end
+	if count and event ~= "SPELL_AURA_APPLIED" then OmniDef:SetChargeInfo(unit, icon, time, duration, expiration); return end
 	--set timer for cooldowns
-	if (not frame[icon].maxExpiration or (frame[icon].maxExpiration ~= frame[icon].maxexpiration)) then
+	if (not frame[icon].maxExpiration or (frame[icon].maxExpiration ~= frame[icon].maxexpiration)) and not count then
 	frame[icon].cooldown:SetCooldown(time, duration)
 	frame[icon].maxExpiration = expiration
 	return
