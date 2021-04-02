@@ -350,8 +350,35 @@ function OmniDef:UNIT_AURA(unit)
   local Spells = unitCD
   for i = 1, 40 do
     local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HARMFUL")
-    if unitCD[spell] or unitCDalt[spell] then
-      if unitCDalt[spell] then Spells = unitCDalt end
+    if source and source == unit then
+      if unitCD[spell] or unitCDalt[spell] then
+        if unitCDalt[spell] then Spells = unitCDalt end
+          duration = Spells[spell].d
+          observed = Spells[spell].o
+          count = Spells[spell].c
+          icon  = Spells[spell].icon
+          frame = icons[unit]
+          expiration = GetTime() + duration
+          time = GetTime()
+        if frame[icon].cooldown:GetCooldownDuration() == 0 then
+          if count then OmniDef:countstarted(unit, spell , icon) end
+          if (observed and OmniDef:observed(unit, spell, icon)) then
+            OmniDef:SetIcon(unit, spell, icon)
+            OmniDef:SetIcons(unit)
+          end
+          if not frame[icon].alticon then
+            OmniDef:SetIcon(unit, spell, icon)
+          end
+          OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
+        end
+      end
+    end
+  end
+  for i = 1, 40 do
+    local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HELPFUL")
+    if source and source == unit then
+      if unitCD[spell] or unitCDalt[spell] then
+        if unitCDalt[spell] then Spells = unitCDalt end
         duration = Spells[spell].d
         observed = Spells[spell].o
         count = Spells[spell].c
@@ -359,40 +386,17 @@ function OmniDef:UNIT_AURA(unit)
         frame = icons[unit]
         expiration = GetTime() + duration
         time = GetTime()
-      if frame[icon].cooldown:GetCooldownDuration() == 0 then
-        if count then OmniDef:countstarted(unit, spell , icon) end
-        if (observed and OmniDef:observed(unit, spell, icon)) then
-          OmniDef:SetIcon(unit, spell, icon)
-          OmniDef:SetIcons(unit)
+        if frame[icon].cooldown:GetCooldownDuration() == 0 then
+          if count then OmniDef:countstarted(unit, spell , icon) end
+          if (observed and OmniDef:observed(unit, spell, icon)) then
+            OmniDef:SetIcon(unit, spell, icon)
+            OmniDef:SetIcons(unit)
+          end
+          if not frame[icon].alticon then
+            OmniDef:SetIcon(unit, spell, icon)
+          end
+          OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
         end
-        if not frame[icon].alticon then
-          OmniDef:SetIcon(unit, spell, icon)
-        end
-        OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
-      end
-    end
-  end
-  for i = 1, 40 do
-    local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HELPFUL")
-    if unitCD[spell] or unitCDalt[spell] then
-      if unitCDalt[spell] then Spells = unitCDalt end
-      duration = Spells[spell].d
-      observed = Spells[spell].o
-      count = Spells[spell].c
-      icon  = Spells[spell].icon
-      frame = icons[unit]
-      expiration = GetTime() + duration
-      time = GetTime()
-      if frame[icon].cooldown:GetCooldownDuration() == 0 then
-        if count then OmniDef:countstarted(unit, spell , icon) end
-        if (observed and OmniDef:observed(unit, spell, icon)) then
-          OmniDef:SetIcon(unit, spell, icon)
-          OmniDef:SetIcons(unit)
-        end
-        if not frame[icon].alticon then
-          OmniDef:SetIcon(unit, spell, icon)
-        end
-        OmniDef:SetInfo(event, unit, icon, time, duration, expiration, count)
       end
     end
   end
