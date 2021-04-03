@@ -6,7 +6,7 @@ local Cooldowns = {
 {spell = 186265, duration = 180, specID = { 253, 254, 255 }, observed = false }, -- Aspect of the Turtle
 {spell = 109304, duration = 120, specID = { 253, 254, 255 }, observed = false }, -- Exhilaration
 {spell = 53480, duration = 60, specID = { 253, 254, 255 }, observed = false }, -- Roar of Sacrifice
-{spell = 5384, duration = 15, specID = { 253, 254, 255 }, observed = false }, -- Feign Death --NEEDS UNIT AURA
+{spell = 5384, duration = 15, specID = { 253, 254, 255 }, observed = false }, -- Feign Death
 
 -- Shaman: Elemental: 262 / Enhacement: 263 / Restoration: 264
 {spell = 108271, spellalt = 210918, duration = 90, durationalt = 45, specID = { 262, 263, 264 }, observed = false }, -- Astral Shift / Ethereal Form
@@ -85,6 +85,39 @@ local Cooldowns = {
 {spell = 31224, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Cloak of Shadows
 {spell = 5277, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Evasion
 {spell = 1856, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Vanish
+
+--Lock: Affliction: 265 / Demonology: 266 / Destruction: 267
+{spell = 104773, duration = 180, specID = { 265, 266, 267 }, observed = false }, -- Unending Resolve
+{spell = 212295, duration = 45, specID = { 265, 266, 267 }, observed = true }, -- Netherward
+{spell = 108416, duration = 60, specID = { 265, 266, 267 }, observed = true }, -- Dark Pact
+
+--Warrior: Arms: 71 / Fury: 72 / Protection: 73
+{spell = 118038, duration = 90, specID = { 71 }, observed = false }, -- Die by the Sword
+{spell = 97462, duration = 180, specID = { 71 }, observed = false }, -- Rallying Cry
+{spell = 236320, duration = 90, specID = { 71 }, observed = true }, -- War Banner
+{spell = 18499, duration = 60, specID = { 71 }, observed = false }, -- Berserker Rage
+{spell = 3411, duration = 30, specID = { 71 }, observed = false }, -- Intervene
+{spell = 23920, duration = 25, specID = { 71 }, observed = false }, -- Spell Reflection
+
+{spell = 184364, duration = 120, specID = { 72 }, observed = false }, -- Enraged Regeneration
+{spell = 97462, duration = 180, specID = { 72 }, observed = false }, -- Rallying Cry
+{spell = 18499, duration = 60, specID = { 72 }, observed = false }, -- Berserker Rage
+{spell = 3411, duration = 30, specID = { 72 }, observed = false }, -- Intervene
+{spell = 23920, duration = 25, specID = { 72 }, observed = false }, -- Spell Reflection
+
+{spell = 871, duration = 240, specID = { 73 }, observed = false }, -- Shield Wall
+{spell = 12975, duration = 180, specID = { 73 }, observed = false }, -- Last Stand
+{spell = 97462, duration = 180, specID = { 73 }, observed = false }, -- Rallying Cry
+{spell = 18499, duration = 60, specID = { 73 }, observed = false }, -- Berserker Rage
+{spell = 3411, duration = 30, specID = { 73 }, observed = false }, -- Intervene
+{spell = 23920, duration = 25, specID = { 73 }, observed = false }, -- Spell Reflection
+
+--Demon Hunter : Havoc: 577 / Vengeance: 581
+{spell = 212800, duration = 60, specID = { 577 }, observed = false }, -- Blur
+{spell = 196718, duration = 180, specID = { 577 }, observed = false }, -- Darkness
+{spell = 331497, duration = 120, specID = { 577 }, observed = true, hue = {1, 1, 0, false} }, -- Darkest Hour
+{spell = 196555, duration = 180, specID = { 577 }, observed = true }, -- Netherwalk
+{spell = 205604, duration = 60, specID = { 577 }, observed = true }, -- Reverse Magic
 
 }
 
