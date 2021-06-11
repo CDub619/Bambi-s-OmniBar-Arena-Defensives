@@ -6,7 +6,7 @@ local Cooldowns = {
 {spell = 186265, duration = 180, specID = { 253, 254, 255 }, observed = false }, -- Aspect of the Turtle
 {spell = 109304, duration = 120, specID = { 253, 254, 255 }, observed = false }, -- Exhilaration
 {spell = 53480, duration = 60, specID = { 253, 254, 255 }, observed = false }, -- Roar of Sacrifice
-{spell = 5384, duration = 15, specID = { 253, 254, 255 }, observed = false }, -- Feign Death
+{spell = 5384, duration = 15, specID = { 253, 254, 255 }, observed = false }, -- Feign Death (Uses UNIT_AURA also trigger cd when aura is removed, could use fix)
 
 -- Shaman: Elemental: 262 / Enhacement: 263 / Restoration: 264
 {spell = 108271, spellalt = 210918, duration = 90, durationalt = 45, specID = { 262, 263, 264 }, observed = false }, -- Astral Shift / Ethereal Form
