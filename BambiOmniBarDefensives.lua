@@ -38,6 +38,8 @@ local Cooldowns = {
 {spell = 198158, duration = 60, specID = { 62 }, observed = true }, -- Mass Invisibility
 {spell = 198111, duration = 45, specID = { 62 }, observed = true }, -- Temporal Shield
 
+--{spell = 190319, duration = 120, specID = { 62, 63, 64 }, observed = false }, -- Combustion
+
 --Monk: Brewmaster: 268 / Windwalker: 269 / Mistweaver: 270
 {spell = 122470, duration = 90, specID = { 269 }, observed = false }, -- Touch of Karma
 {spell = 116849, duration = 80, specID = { 270 }, observed = false }, -- Life Cacocon
@@ -334,7 +336,7 @@ function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 	local unit, icon, expiration, duration, observed, charges, time, count, frame
 	local Spells = unitCD
 	if ((event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0) or (self.test and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED")) then
-		if ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) or (self.test and sourceGUID == UnitGUID("player")) then
+		if ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) or (self.test and sourceGUID == UnitGUID("player")) then --should prevent spellsteall or pallies boping eachother
 			if not self.test then for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end else unit = "player" end
 			if unitCD[spell] or unitCDalt[spell] then
 				if unitCDalt[spell] then Spells = unitCDalt end
@@ -383,7 +385,7 @@ function OmniDef:UNIT_AURA(unit)
   local Spells = unitCD
   for i = 1, 40 do
     local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HARMFUL")
-    if source and source == unit then
+    if source and source == unit then --should prevent spellsteall or pallies boping eachother
       if unitCD[spell] or unitCDalt[spell] then
         if unitCDalt[spell] then Spells = unitCDalt end
           duration = Spells[spell].d
@@ -393,7 +395,7 @@ function OmniDef:UNIT_AURA(unit)
           frame = icons[unit]
           expiration = GetTime() + duration
           time = GetTime()
-        if frame[icon].cooldown:GetCooldownDuration() == 0 then
+        if frame[icon].cooldown:GetCooldownDuration() == 0 then -used since cleu should be the first check for a cd
           if count then OmniDef:countstarted(unit, spell , icon) end
           if (observed and OmniDef:observed(unit, spell, icon)) then
             OmniDef:SetIcon(unit, spell, icon)
@@ -409,7 +411,7 @@ function OmniDef:UNIT_AURA(unit)
   end
   for i = 1, 40 do
     local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HELPFUL")
-    if source and source == unit then
+    if source and source == unit then --should prevent spellsteall or pallies boping eachother
       if unitCD[spell] or unitCDalt[spell] then
         if unitCDalt[spell] then Spells = unitCDalt end
         duration = Spells[spell].d
@@ -419,7 +421,7 @@ function OmniDef:UNIT_AURA(unit)
         frame = icons[unit]
         expiration = GetTime() + duration
         time = GetTime()
-        if frame[icon].cooldown:GetCooldownDuration() == 0 then
+        if frame[icon].cooldown:GetCooldownDuration() == 0 then --used since cleu should be the first check for a cd
           if count then OmniDef:countstarted(unit, spell , icon) end
           if (observed and OmniDef:observed(unit, spell, icon)) then
             OmniDef:SetIcon(unit, spell, icon)
