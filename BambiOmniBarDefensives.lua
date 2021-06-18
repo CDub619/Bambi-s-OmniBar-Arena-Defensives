@@ -395,7 +395,7 @@ function OmniDef:UNIT_AURA(unit)
           frame = icons[unit]
           expiration = GetTime() + duration
           time = GetTime()
-        if frame[icon].cooldown:GetCooldownDuration() == 0 then -used since cleu should be the first check for a cd
+        if frame[icon].cooldown:GetCooldownDuration() == 0 then --used since cleu should be the first check for a cd
           if count then OmniDef:countstarted(unit, spell , icon) end
           if (observed and OmniDef:observed(unit, spell, icon)) then
             OmniDef:SetIcon(unit, spell, icon)
