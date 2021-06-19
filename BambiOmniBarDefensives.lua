@@ -38,7 +38,12 @@ local Cooldowns = {
 {spell = 198158, duration = 60, specID = { 62 }, observed = true }, -- Mass Invisibility
 {spell = 198111, duration = 45, specID = { 62 }, observed = true }, -- Temporal Shield
 
---{spell = 190319, duration = 120, specID = { 62, 63, 64 }, observed = false }, -- Combustion
+{spell = 235313, duration = 25, specID = { 63 }, observed = true, mobility = true}, -- Molten Shield
+{spell = 190319, duration = 120, specID = { 63 }, observed = false, mobility = true}, -- Combustion
+{spell = 108853, duration = 8.9, charges = 3, specID = { 63 }, observed = true, mobility = true}, -- Fire Blast
+{spell = 122, duration = 30, specID = { 62, 63, 64 }, observed = true, mobility = true}, -- Frost Nova
+{spell = 212653, spellalt = 1953, duration = 25, durationalt = 15, specID = { 62, 63, 64 }, charges = 2, chargesalt = 1, observed = false, mobility = true}, -- Blink
+{spell = 55342, duration = 120, specID = { 63 }, observed = true, mobility = true}, -- Images
 
 --Monk: Brewmaster: 268 / Windwalker: 269 / Mistweaver: 270
 {spell = 122470, duration = 90, specID = { 269 }, observed = false }, -- Touch of Karma
@@ -198,10 +203,12 @@ local Masque
 local unitCD = { }
 local unitCDalt = { }
 local icons = { }
+local mobilityicons = { }
 local hieght = 40
 local width = 40
 local SwipeAlpha = .85
 local glossEnabled = false
+local mobilityC
 
 local OmniDef = CreateFrame('Frame')
 OmniDef:SetScript("OnEvent", function(self, event, unit, arg1, arg2, arg3, arg4)
@@ -289,6 +296,12 @@ function OmniDef:ResetUnits()
 			end
 			icons[unit] = nil
 		end
+    if mobilityC then
+      for i = 1, #mobilityicons  do
+        mobilityicons[i] = nil
+      end
+      mobilityC = nil
+    end
 	end
 	 --reset the spell tables
 	 unitCD = nil
@@ -448,74 +461,75 @@ function OmniDef:CreateIcons(unit, spec)
 			print("Creating OmniDef: "..unit.." "..name.." ("..spec..")")
 			if unitCD == nil then unitCD = { } end
 			if unitCDalt == nil then unitCDalt = { } end
-				local j = 0
-				frame.spec = spec
-				for i, v in ipairs(Cooldowns) do
-					if v.specID  then
-						for _, specs in ipairs (v.specID) do
-							if specs == spec then
-							j = j + 1
-							frame[j] = CreateFrame("Frame", "OmniDef"..j..unit, frame)
-							frame[j]:ClearAllPoints()
-							frame[j]:SetHeight(hieght)
-							frame[j]:SetWidth(width)
-							frame[j].texture = frame[j]:CreateTexture(frame[j], 'BACKGROUND')
-							frame[j].texture:SetAllPoints(frame[j])
-							frame[j].texture:SetTexture(GetSpellTexture(v.spell))
-							frame[j].texture:SetTexCoord(0, 1, 0, 1)
-							--frame[j].texture:SetTexCoord(0.07, 0.9, 0.07, 0.9) -- noborder
-							if Gladius and glossEnabled then
-								frame[j].gloss = CreateFrame("Button", "OmniDef"..j..unit.."gloss", frame[j])
-								frame[j].gloss:SetNormalTexture("Interface\\AddOns\\Gladius\\Images\\Gloss")
-								frame[j].gloss:SetHeight(frame[j]:GetHeight() + frame[j]:GetHeight() * 0.4)
-								frame[j].gloss:SetWidth(frame[j]:GetWidth() + frame[j]:GetWidth() * 0.35)
-								frame[j].gloss:SetAlpha(0.4)
-								frame[j].gloss:SetScale(0.99)
-								frame[j].gloss:ClearAllPoints()
-								frame[j].gloss:SetPoint("CENTER", 0, 0)
-							end
-							--frame[j].gloss.SetAllPoints(frame[j])
-							frame[j].count = frame[j]:CreateFontString(nil, "OVERLAY");
-							frame[j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
-							frame[j].count:SetPoint("TOPRIGHT", 0, 8);
-							frame[j].count:SetJustifyH("RIGHT");
-							frame[j].cooldown = CreateFrame("Cooldown", nil, frame[j], 'CooldownFrameTemplate')
-							frame[j].cooldown:SetAllPoints(frame[j])
-							frame[j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
-							frame[j].cooldown:SetDrawSwipe(true)
-							frame[j].cooldown:SetDrawEdge(false)
-							frame[j].cooldown:SetSwipeColor(0, 0, 0, SwipeAlpha)
-							frame[j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
-							frame[j].cooldown:SetDrawBling(false)
-							frame[j].cooldowncount = frame[j].cooldown:CreateFontString(nil, "OVERLAY");
-							frame[j].cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
-							frame[j].cooldowncount:SetPoint("TOPRIGHT", 0, 8);
-							frame[j].cooldowncount:SetJustifyH("RIGHT");
-							frame[j].observed = v.observed
-							frame[j].spell = v.spell
-							frame[j].duration = v.duration
-							frame[j].charges = v.charges
-							frame[j].Maxcharges = v.charges
-							frame[j].countstarted =false
-							if v.hue then
-								local c = v.hue
-								frame[j].hue = {c[1], c[2], c[3], c[4]} --Destaurate Icon
-							end
-							frame[j].alticon = v.alticon
-							if v.spellalt then
-								if not v.observedalt then v.observedalt = v.observed end --always = v.observed
-								if not v.chargesalt then v.chargesalt = v.charges end
-								if not v.durationalt then v.durationalt = v.duration end
-								unitCDalt[v.spellalt] = {d = v.durationalt, o = v.observedalt, c = v.chargesalt, icon = j}
-							end
-								unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges, icon = j}
-							break
-							end
+			local j = 0
+			frame.spec = spec
+			for i, v in ipairs(Cooldowns) do
+				if v.specID  then
+					for _, specs in ipairs (v.specID) do
+						if specs == spec then
+						j = j + 1
+						frame[j] = CreateFrame("Frame", "OmniDef"..j..unit, frame)
+						frame[j]:ClearAllPoints()
+						frame[j]:SetHeight(hieght)
+						frame[j]:SetWidth(width)
+						frame[j].texture = frame[j]:CreateTexture(frame[j], 'BACKGROUND')
+						frame[j].texture:SetAllPoints(frame[j])
+						frame[j].texture:SetTexture(GetSpellTexture(v.spell))
+						frame[j].texture:SetTexCoord(0, 1, 0, 1)
+						--frame[j].texture:SetTexCoord(0.07, 0.9, 0.07, 0.9) -- noborder
+						if Gladius and glossEnabled then
+							frame[j].gloss = CreateFrame("Button", "OmniDef"..j..unit.."gloss", frame[j])
+							frame[j].gloss:SetNormalTexture("Interface\\AddOns\\Gladius\\Images\\Gloss")
+							frame[j].gloss:SetHeight(frame[j]:GetHeight() + frame[j]:GetHeight() * 0.4)
+							frame[j].gloss:SetWidth(frame[j]:GetWidth() + frame[j]:GetWidth() * 0.35)
+							frame[j].gloss:SetAlpha(0.4)
+							frame[j].gloss:SetScale(0.99)
+							frame[j].gloss:ClearAllPoints()
+							frame[j].gloss:SetPoint("CENTER", 0, 0)
+						end
+						--frame[j].gloss.SetAllPoints(frame[j])
+						frame[j].count = frame[j]:CreateFontString(nil, "OVERLAY");
+						frame[j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+						frame[j].count:SetPoint("TOPRIGHT", 0, 8);
+						frame[j].count:SetJustifyH("RIGHT");
+						frame[j].cooldown = CreateFrame("Cooldown", nil, frame[j], 'CooldownFrameTemplate')
+						frame[j].cooldown:SetAllPoints(frame[j])
+						frame[j].cooldown:SetEdgeTexture("Interface\\Cooldown\\edge")    --("Interface\\Cooldown\\edge-LoC") Blizz LC CD
+						frame[j].cooldown:SetDrawSwipe(true)
+						frame[j].cooldown:SetDrawEdge(false)
+						frame[j].cooldown:SetSwipeColor(0, 0, 0, SwipeAlpha)
+						frame[j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
+						frame[j].cooldown:SetDrawBling(false)
+						frame[j].cooldowncount = frame[j].cooldown:CreateFontString(nil, "OVERLAY");
+						frame[j].cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+						frame[j].cooldowncount:SetPoint("TOPRIGHT", 0, 8);
+						frame[j].cooldowncount:SetJustifyH("RIGHT");
+						frame[j].observed = v.observed
+						frame[j].spell = v.spell
+						frame[j].duration = v.duration
+						frame[j].charges = v.charges
+						frame[j].Maxcharges = v.charges
+            if v.mobility then frame[j].mobility = v.mobility; if not mobilityC then mobilityC = 1; else mobilityC = mobilityC + 1; end;  mobilityicons[mobilityC] = frame[j];  end
+						frame[j].countstarted =false
+						if v.hue then
+							local c = v.hue
+							frame[j].hue = {c[1], c[2], c[3], c[4]} --Destaurate Icon
+						end
+						frame[j].alticon = v.alticon
+						if v.spellalt then
+							if not v.observedalt then v.observedalt = v.observed end --always = v.observed
+							if not v.chargesalt then v.chargesalt = v.charges end
+							if not v.durationalt then v.durationalt = v.duration end
+							unitCDalt[v.spellalt] = {d = v.durationalt, o = v.observedalt, c = v.chargesalt, icon = j}
+						end
+							unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges, icon = j}
+						break
 						end
 					end
-				self:SetIcons(unit)
+				end
 			end
 		end
+	   self:SetIcons(unit)
 	end
 end
 
@@ -533,8 +547,8 @@ function OmniDef:SetIcons(unit)
 	end
  	for j = 1, #frame do
 		if frame[j].charges and frame[j].charges ~= 0 then
-				frame[j].count:Show();
-				frame[j].count:SetText(frame[j].charges)
+			frame[j].count:Show();
+			frame[j].count:SetText(frame[j].charges)
 		else
 			frame[j].count:Hide();
 		end
@@ -548,7 +562,7 @@ function OmniDef:SetIcons(unit)
 			frame[j].texture:SetTexture(GetSpellTexture(frame[j].alticon))
 			frame[j].texture:SetAllPoints(frame[j])
 		end
-		if not frame[j].observed then
+		if not frame[j].observed and not frame[j].mobility then
 			if not collast then
 				frame[j]:ClearAllPoints()
 				frame[j]:SetParent(relativeFrame)
@@ -563,6 +577,38 @@ function OmniDef:SetIcons(unit)
 				collast = j
 			end
 		end
+    if not frame[j].observed and frame[j].mobility then
+      if mobilityicons[1] == frame[j] then
+        mobilityiconsAnchor = CreateFrame("Frame", "OffensiveAnchor", frame)
+        mobilityiconsAnchor:SetPoint("CENTER", UIParent, "CENTER", 0, -150)
+        mobilityiconsAnchor:SetWidth(40)
+        mobilityiconsAnchor:SetHeight(40)
+        mobilityiconsAnchor.texture = mobilityiconsAnchor:CreateTexture(nil, "BACKGROUND")
+        mobilityiconsAnchor.texture:SetAllPoints(true)
+        mobilityiconsAnchor.texture:SetColorTexture(1.0, 1.0, 1.0, 0)
+
+        mobilityicons[1]:ClearAllPoints()
+        mobilityicons[1]:SetParent(mobilityiconsAnchor)
+        mobilityicons[1]:SetFrameStrata("HIGH")
+        mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER")
+      else -- means new spell to set :0
+        for i = 1, #mobilityicons do
+          if mobilityicons[i].spell == frame[j].spell then
+            local mobilityshowing = 0
+            for k = 1, #mobilityicons do
+              if not mobilityicons[k].observed then
+                mobilityshowing = mobilityshowing + 1
+              end
+            end
+            mobilityicons[i]:ClearAllPoints()
+            mobilityicons[i]:SetParent(mobilityiconsAnchor)
+            mobilityicons[i]:SetFrameStrata("HIGH")
+            mobilityicons[i]:SetPoint("BOTTOMLEFT", mobilityicons[i- 1], "BOTTOMRIGHT", 0, 0)
+            mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER", -mobilityicons[1]:GetWidth()/2 * (mobilityshowing-1), 0)
+          end
+        end
+      end
+    end
 	end
 end
 
