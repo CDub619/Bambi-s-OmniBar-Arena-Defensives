@@ -599,6 +599,8 @@ function OmniDef:SetIcons(unit)
           end
         end
         local k = 1
+        print(#mobilityicons)
+        print(mobilityshowing)
         for i = 1, #mobilityicons do -- doing first shown spell as well :()
           if mobilityicons[i].spell == frame[j].spell and  mobilityicons[i] ~= mobilityicons[1] then
             mobilityicons[i]:ClearAllPoints()
