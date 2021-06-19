@@ -592,19 +592,21 @@ function OmniDef:SetIcons(unit)
         mobilityicons[1]:SetFrameStrata("HIGH")
         mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER")
       else -- means new spell to set :0
-        for i = 1, #mobilityicons do
-          if mobilityicons[i].spell == frame[j].spell then
-            local mobilityshowing = 0
-            for k = 1, #mobilityicons do
-              if not mobilityicons[k].observed then
-                mobilityshowing = mobilityshowing + 1
-              end
-            end
+        local mobilityshowing = 0
+        for k = 1, #mobilityicons do
+          if not mobilityicons[k].observed then
+            mobilityshowing = mobilityshowing + 1
+          end
+        end
+        local k = 1
+        for i = 1, #mobilityicons do -- doing first shown spell as well :()
+          if mobilityicons[i].spell == frame[j].spell and  mobilityicons[i] ~= mobilityicons[1] then
             mobilityicons[i]:ClearAllPoints()
             mobilityicons[i]:SetParent(mobilityiconsAnchor)
             mobilityicons[i]:SetFrameStrata("HIGH")
-            mobilityicons[i]:SetPoint("BOTTOMLEFT", mobilityicons[i- 1], "BOTTOMRIGHT", 0, 0)
+            mobilityicons[i]:SetPoint("BOTTOMLEFT", mobilityicons[i - k], "BOTTOMRIGHT", 0, 0) -- has to anchor to the last showing , problem is when it skips :()
             mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER", -mobilityicons[1]:GetWidth()/2 * (mobilityshowing-1), 0)
+            k = k + 1
           end
         end
       end
