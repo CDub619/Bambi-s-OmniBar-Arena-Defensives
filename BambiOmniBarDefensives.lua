@@ -20,6 +20,10 @@ local Cooldowns = {
 {spell = 51052, duration = 120,	specID = { 250, 251, 252 } ,  observed = false }, -- AMZ
 {spell = 49039, duration = 120,	specID = { 250, 251, 252 } ,  observed = false }, -- Lichbourne
 
+      {spell = 49576, duration = 25,	specID = { 251, 252 } ,  observed = false, mobility = true }, -- Death Grip
+      {spell = 49576, duration = 25,	specID = { 250 } ,  observed = false, charges = 2, mobility = true }, -- Death Grip (Blood)
+      {spell = 315443, duration = 120,	specID = { 250, 251, 252 } ,  observed = true, mobility = true }, -- Abomination limb
+
 --Druid: Balance: 102 / Feral: 103 / Guardian: 104 /Restoration: 105
 {spell = 22812, duration = 60, specID = { 102, 103, 104, 105 }, observed = false }, -- Barkskin
 {spell = 102342, duration = 90, specID = { 105 }, observed = false }, -- Ironbark
@@ -38,12 +42,7 @@ local Cooldowns = {
 {spell = 198158, duration = 60, specID = { 62 }, observed = true }, -- Mass Invisibility
 {spell = 198111, duration = 45, specID = { 62 }, observed = true }, -- Temporal Shield
 
-{spell = 235313, duration = 25, specID = { 63 }, observed = true, mobility = true}, -- Molten Shield
-{spell = 190319, duration = 120, specID = { 63 }, observed = false, mobility = true}, -- Combustion
-{spell = 108853, duration = 8.9, charges = 3, specID = { 63 }, observed = true, mobility = true}, -- Fire Blast
-{spell = 122, duration = 30, specID = { 62, 63, 64 }, observed = true, mobility = true}, -- Frost Nova
-{spell = 212653, spellalt = 1953, duration = 25, durationalt = 15, specID = { 62, 63, 64 }, charges = 2, chargesalt = 1, observed = false, mobility = true}, -- Blink
-{spell = 55342, duration = 120, specID = { 63 }, observed = true, mobility = true}, -- Images
+      {spell = 212653, spellalt = 1953, duration = 25, durationalt = 15, specID = { 62, 63, 64 }, charges = 2, chargesalt = 1, observed = false, mobility = true}, -- Blink
 
 --Monk: Brewmaster: 268 / Windwalker: 269 / Mistweaver: 270
 {spell = 122470, duration = 90, specID = { 269 }, observed = false }, -- Touch of Karma
@@ -92,6 +91,10 @@ local Cooldowns = {
 {spell = 31224, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Cloak of Shadows
 {spell = 5277, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Evasion
 {spell = 1856, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Vanish
+
+      {spell = 36554, duration = 27, specID = { 259 }, observed = false, mobility = true }, -- ShadowStep (Assa)
+      {spell = 195457, duration = 60, specID = { 260 }, observed = false, mobility = true }, -- Hook
+      {spell = 36554, duration = 27, specID = { 261 }, observed = false , charges = 2, mobility = true}, -- ShadowStep (Sub)
 
 --Lock: Affliction: 265 / Demonology: 266 / Destruction: 267
 {spell = 104773, duration = 180, specID = { 265, 266, 267 }, observed = false }, -- Unending Resolve
@@ -204,11 +207,20 @@ local unitCD = { }
 local unitCDalt = { }
 local icons = { }
 local mobilityicons = { }
+local mobilityHeight = 30
+local mobilityWidth = 30
 local hieght = 40
 local width = 40
 local SwipeAlpha = .85
 local glossEnabled = false
-local mobilityC
+
+local mobilityiconsAnchor = CreateFrame("Frame", "OffensiveAnchor", frame)
+mobilityiconsAnchor:SetPoint("CENTER", UIParent, "CENTER", 0, -150)
+mobilityiconsAnchor:SetWidth(40)
+mobilityiconsAnchor:SetHeight(40)
+mobilityiconsAnchor.texture = mobilityiconsAnchor:CreateTexture(nil, "BACKGROUND")
+mobilityiconsAnchor.texture:SetAllPoints(true)
+mobilityiconsAnchor.texture:SetColorTexture(1.0, 1.0, 1.0, 0)
 
 local OmniDef = CreateFrame('Frame')
 OmniDef:SetScript("OnEvent", function(self, event, unit, arg1, arg2, arg3, arg4)
@@ -296,11 +308,10 @@ function OmniDef:ResetUnits()
 			end
 			icons[unit] = nil
 		end
-    if mobilityC then
+    if mobilityicons[1] then
       for i = 1, #mobilityicons  do
         mobilityicons[i] = nil
       end
-      mobilityC = nil
     end
 	end
 	 --reset the spell tables
@@ -489,7 +500,7 @@ function OmniDef:CreateIcons(unit, spec)
 						end
 						--frame[j].gloss.SetAllPoints(frame[j])
 						frame[j].count = frame[j]:CreateFontString(nil, "OVERLAY");
-						frame[j].count:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+						frame[j].count:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
 						frame[j].count:SetPoint("TOPRIGHT", 0, 8);
 						frame[j].count:SetJustifyH("RIGHT");
 						frame[j].cooldown = CreateFrame("Cooldown", nil, frame[j], 'CooldownFrameTemplate')
@@ -501,7 +512,7 @@ function OmniDef:CreateIcons(unit, spec)
 						frame[j].cooldown:SetReverse(false) --will reverse the swipe if actionbars or debuff, by default bliz sets the swipe to actionbars if this = true it will be set to debuffs
 						frame[j].cooldown:SetDrawBling(false)
 						frame[j].cooldowncount = frame[j].cooldown:CreateFontString(nil, "OVERLAY");
-						frame[j].cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 20, "OUTLINE")
+						frame[j].cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 22, "OUTLINE")
 						frame[j].cooldowncount:SetPoint("TOPRIGHT", 0, 8);
 						frame[j].cooldowncount:SetJustifyH("RIGHT");
 						frame[j].observed = v.observed
@@ -509,7 +520,7 @@ function OmniDef:CreateIcons(unit, spec)
 						frame[j].duration = v.duration
 						frame[j].charges = v.charges
 						frame[j].Maxcharges = v.charges
-            if v.mobility then frame[j].mobility = v.mobility; if not mobilityC then mobilityC = 1; else mobilityC = mobilityC + 1; end;  mobilityicons[mobilityC] = frame[j];  end
+            if v.mobility then frame[j].mobility = v.mobility; tblinsert(mobilityicons, frame[j]) end
 						frame[j].countstarted =false
 						if v.hue then
 							local c = v.hue
@@ -578,37 +589,35 @@ function OmniDef:SetIcons(unit)
 			end
 		end
     if not frame[j].observed and frame[j].mobility then
-      if mobilityicons[1] == frame[j] then
-        mobilityiconsAnchor = CreateFrame("Frame", "OffensiveAnchor", frame)
-        mobilityiconsAnchor:SetPoint("CENTER", UIParent, "CENTER", 0, -150)
-        mobilityiconsAnchor:SetWidth(40)
-        mobilityiconsAnchor:SetHeight(40)
-        mobilityiconsAnchor.texture = mobilityiconsAnchor:CreateTexture(nil, "BACKGROUND")
-        mobilityiconsAnchor.texture:SetAllPoints(true)
-        mobilityiconsAnchor.texture:SetColorTexture(1.0, 1.0, 1.0, 0)
-
-        mobilityicons[1]:ClearAllPoints()
-        mobilityicons[1]:SetParent(mobilityiconsAnchor)
-        mobilityicons[1]:SetFrameStrata("HIGH")
-        mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER")
-      else -- means new spell to set :0
-        local mobilityshowing = 0
-        for k = 1, #mobilityicons do
-          if not mobilityicons[k].observed then
-            mobilityshowing = mobilityshowing + 1
-          end
+      local mobilityshowing = 0; local lastIcon; local firstIcon
+      for k = 1, #mobilityicons do
+        if not mobilityicons[k].observed then
+          mobilityshowing = mobilityshowing + 1
         end
-        local k = 1
-        print(#mobilityicons)
-        print(mobilityshowing)
-        for i = 1, #mobilityicons do -- doing first shown spell as well :()
-          if mobilityicons[i].spell == frame[j].spell and  mobilityicons[i] ~= mobilityicons[1] then
-            mobilityicons[i]:ClearAllPoints()
-            mobilityicons[i]:SetParent(mobilityiconsAnchor)
-            mobilityicons[i]:SetFrameStrata("HIGH")
-            mobilityicons[i]:SetPoint("BOTTOMLEFT", mobilityicons[i - k], "BOTTOMRIGHT", 0, 0) -- has to anchor to the last showing , problem is when it skips :()
-            mobilityicons[1]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER", -mobilityicons[1]:GetWidth()/2 * (mobilityshowing-1), 0)
-            k = k + 1
+      end
+      for k, v in ipairs(mobilityicons) do
+        if not v.observed then
+          if not lastIcon then
+            v:ClearAllPoints()
+            v:SetParent(mobilityiconsAnchor)
+            v:SetHeight(mobilityHeight)
+            v:SetWidth(mobilityWidth)
+            v.count:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v:SetFrameStrata("HIGH")
+            v:SetPoint("CENTER", mobilityiconsAnchor, "CENTER")
+            lastIcon = k; firstIcon = k
+          else -- means new spell to set :0
+            v:ClearAllPoints()
+            v:SetParent(mobilityicons[lastIcon])
+            v:SetHeight(mobilityHeight)
+            v:SetWidth(mobilityWidth)
+            v.count:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v:SetFrameStrata("HIGH")
+            v:SetPoint("BOTTOMLEFT", mobilityicons[lastIcon], "BOTTOMRIGHT", 0, 0) -- has to anchor to the last showing , problem is when it skips :()
+            mobilityicons[firstIcon]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER", -mobilityicons[firstIcon]:GetWidth()/2 * (mobilityshowing - 1), 0)
+            lastIcon = k
           end
         end
       end
