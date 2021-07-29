@@ -4,7 +4,7 @@
 local Cooldowns = {
 -- Hunter: Beast Mastery: 253 / Marksmanship: 254 / Survival: 255
 {spell = 186265, duration = 180, specID = { 253, 254, 255 }, observed = false }, -- Aspect of the Turtle
-{spell = 109304, duration = 120, specID = { 253, 254, 255 }, observed = false }, -- Exhilaration
+--{spell = 109304, duration = 120, specID = { 253, 254, 255 }, observed = false }, -- Exhilaration
 {spell = 53480, duration = 60, specID = { 253, 254, 255 }, observed = false }, -- Roar of Sacrifice
 {spell = 5384, duration = 15, specID = { 253, 254, 255 }, observed = false }, -- Feign Death (Uses UNIT_AURA also trigger cd when aura is removed, could use fix)
 
@@ -27,6 +27,8 @@ local Cooldowns = {
 --Druid: Balance: 102 / Feral: 103 / Guardian: 104 /Restoration: 105
 {spell = 22812, duration = 60, specID = { 102, 103, 104, 105 }, observed = false }, -- Barkskin
 {spell = 102342, duration = 90, specID = { 105 }, observed = false }, -- Ironbark
+{spell = 132158, duration = 60, specID = { 105 }, observed = false }, -- Nature's Swfitness
+--{spell = 203651, duration = 60, specID = { 105 }, observed = false }, -- Overgrowth
 {spell = 61336, duration = 180, specID = { 103 }, observed = false }, -- Survival instincts
 {spell = 61336, duration = 180, specID = { 104 }, charges = 2,  observed = false }, -- Survival instincts
 {spell = 22842, duration = 30, specID = { 104 }, charges = 2,  observed = false }, -- Frenzied Regeneration
@@ -42,7 +44,9 @@ local Cooldowns = {
 {spell = 198158, duration = 60, specID = { 62 }, observed = true }, -- Mass Invisibility
 {spell = 198111, duration = 45, specID = { 62 }, observed = true }, -- Temporal Shield
 
-      {spell = 212653, spellalt = 1953, duration = 25, durationalt = 15, specID = { 62, 63, 64 }, charges = 2, chargesalt = 1, observed = false, mobility = true}, -- Blink
+    --  {spell = 190319, duration = 120, specID = { 63 }, observed = false }, -- Combustion
+
+       {spell = 212653, spellalt = 1953, duration = 25, durationalt = 15, specID = { 62, 63, 64 }, charges = 2, chargesalt = 1, observed = false, mobility = true}, -- Blink
 
 --Monk: Brewmaster: 268 / Windwalker: 269 / Mistweaver: 270
 {spell = 122470, duration = 90, specID = { 269 }, observed = false }, -- Touch of Karma
@@ -81,6 +85,7 @@ local Cooldowns = {
 {spell = 47788, duration = 120, specID = { 257 }, observed = false }, -- Guardian Spirit
 {spell = 197268, duration = 60, specID = { 257 }, observed = true }, -- Ray of Hope
 {spell = 213602, duration = 45, specID = { 257 }, observed = true }, -- Grater Fade
+{spell = 328530, duration = 60, specID = { 257 }, observed = true }, -- Divine Ascension
 {spell = 213610, duration = 30, specID = { 257 }, observed = true }, -- Holy Ward
 
 {spell = 47585, duration = 90, specID = { 258 }, observed = false }, -- Dispersion
@@ -92,9 +97,9 @@ local Cooldowns = {
 {spell = 5277, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Evasion
 {spell = 1856, duration = 120, specID = { 259, 260, 261 }, observed = false }, -- Vanish
 
-      {spell = 36554, duration = 27, specID = { 259 }, observed = false, mobility = true }, -- ShadowStep (Assa)
-      {spell = 195457, duration = 60, specID = { 260 }, observed = false, mobility = true }, -- Hook
-      {spell = 36554, duration = 27, specID = { 261 }, observed = false , charges = 2, mobility = true}, -- ShadowStep (Sub)
+       {spell = 36554, duration = 27, specID = { 259 }, observed = false, mobility = true }, -- ShadowStep (Assa)
+       {spell = 195457, duration = 60, specID = { 260 }, observed = false, mobility = true }, -- Hook
+       {spell = 36554, duration = 27, specID = { 261 }, observed = false , charges = 2, mobility = true}, -- ShadowStep (Sub)
 
 --Lock: Affliction: 265 / Demonology: 266 / Destruction: 267
 {spell = 104773, duration = 180, specID = { 265, 266, 267 }, observed = false }, -- Unending Resolve
@@ -103,10 +108,10 @@ local Cooldowns = {
 
 --Warrior: Arms: 71 / Fury: 72 / Protection: 73
 {spell = 118038, duration = 90, specID = { 71 }, observed = false }, -- Die by the Sword
-{spell = 97462, duration = 180, specID = { 71 }, observed = false }, -- Rallying Cry
-{spell = 236320, duration = 90, specID = { 71 }, observed = true }, -- War Banner
+--{spell = 97462, duration = 180, specID = { 71 }, observed = false }, -- Rallying Cry
+--{spell = 236320, duration = 90, specID = { 71 }, observed = true }, -- War Banner
 {spell = 18499, duration = 60, specID = { 71 }, observed = false }, -- Berserker Rage
-{spell = 3411, duration = 30, specID = { 71 }, observed = false }, -- Intervene
+--{spell = 3411, duration = 30, specID = { 71 }, observed = false }, -- Intervene
 {spell = 23920, duration = 25, specID = { 71 }, observed = false }, -- Spell Reflection
 
 {spell = 184364, duration = 120, specID = { 72 }, observed = false }, -- Enraged Regeneration
@@ -225,7 +230,7 @@ mobilityiconsAnchor.texture:SetColorTexture(1.0, 1.0, 1.0, 0)
 local OmniDef = CreateFrame('Frame')
 OmniDef:SetScript("OnEvent", function(self, event, unit, arg1, arg2, arg3, arg4)
 	if event == 'COMBAT_LOG_EVENT_UNFILTERED' then
-		OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
+		  OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
   elseif event == 'UNIT_AURA' and (((unit == "arena1") or (unit == "arena2") or (unit == "arena3")) or (self.test and unit == "player")) then
       OmniDef:UNIT_AURA(unit)
 	elseif event == "ARENA_OPPONENT_UPDATE" then
@@ -358,16 +363,16 @@ end
 function OmniDef:COMBAT_LOG_EVENT_UNFILTERED()
 	local _, event, _, sourceGUID, sourceName, sourceFlags, _,_,_,_,_, spell, spellName = CombatLogGetCurrentEventInfo()
 	local unit, icon, expiration, duration, observed, charges, time, count, frame
-	local Spells = unitCD
 	if ((event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED") and bit.band(sourceFlags, COMBATLOG_OBJECT_REACTION_HOSTILE) ~= 0) or (self.test and (event == "SPELL_CAST_SUCCESS" or event == "SPELL_AURA_APPLIED")) then
 		if ((sourceGUID == UnitGUID("arena1")) or (sourceGUID == UnitGUID("arena2")) or (sourceGUID == UnitGUID("arena3"))) or (self.test and sourceGUID == UnitGUID("player")) then --should prevent spellsteall or pallies boping eachother
 			if not self.test then for i = 1, GetNumArenaOpponents() do if (sourceGUID == UnitGUID("arena"..i)) then unit = "arena"..i break end end else unit = "player" end
-			if unitCD[spell] or unitCDalt[spell] then
-				if unitCDalt[spell] then Spells = unitCDalt end
-					duration = Spells[spell].d
-				  observed = Spells[spell].o
-					count = Spells[spell].c
-				  icon  = Spells[spell].icon
+      local UnitSpells = unitCD[unit]; local UnitSpellsAlt = unitCDalt[unit]
+			if UnitSpells[spell] or UnitSpellsAlt[spell] then
+				if UnitSpellsAlt[spell] then UnitSpells = unitCDalt[unit] end
+					duration = UnitSpells[spell].d
+				  observed = UnitSpells[spell].o
+					count = UnitSpells[spell].c
+				  icon  = UnitSpells[spell].icon
 					frame = icons[unit]
 					expiration = GetTime() + duration
 					time = GetTime()
@@ -406,16 +411,16 @@ end
 
 function OmniDef:UNIT_AURA(unit)
   local icon, expiration, duration, observed, charges, time, count, frame
-  local Spells = unitCD
   for i = 1, 40 do
     local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HARMFUL")
     if source and source == unit then --should prevent spellsteall or pallies boping eachother
-      if unitCD[spell] or unitCDalt[spell] then
-        if unitCDalt[spell] then Spells = unitCDalt end
-          duration = Spells[spell].d
-          observed = Spells[spell].o
-          count = Spells[spell].c
-          icon  = Spells[spell].icon
+      local UnitSpells = unitCD[unit]; local UnitSpellsAlt = unitCDalt[unit]
+      if UnitSpells[spell] or UnitSpellsAlt[spell] then
+        if UnitSpellsAlt[spell] then UnitSpells = unitCDalt[unit] end
+          duration = UnitSpells[spell].d
+          observed = UnitSpells[spell].o
+          count = UnitSpells[spell].c
+          icon  = UnitSpells[spell].icon
           frame = icons[unit]
           expiration = GetTime() + duration
           time = GetTime()
@@ -436,15 +441,16 @@ function OmniDef:UNIT_AURA(unit)
   for i = 1, 40 do
     local _, _, _, _, _, _, source, _, _, spell = UnitAura(unit, i, "HELPFUL")
     if source and source == unit then --should prevent spellsteall or pallies boping eachother
-      if unitCD[spell] or unitCDalt[spell] then
-        if unitCDalt[spell] then Spells = unitCDalt end
-        duration = Spells[spell].d
-        observed = Spells[spell].o
-        count = Spells[spell].c
-        icon  = Spells[spell].icon
-        frame = icons[unit]
-        expiration = GetTime() + duration
-        time = GetTime()
+      local UnitSpells = unitCD[unit]; local UnitSpellsAlt = unitCDalt[unit]
+      if UnitSpells[spell] or UnitSpellsAlt[spell] then
+        if UnitSpellsAlt[spell] then UnitSpells = unitCDalt[unit] end
+          duration = UnitSpells[spell].d
+          observed = UnitSpells[spell].o
+          count = UnitSpells[spell].c
+          icon  = UnitSpells[spell].icon
+          frame = icons[unit]
+          expiration = GetTime() + duration
+          time = GetTime()
         if frame[icon].cooldown:GetCooldownDuration() == 0 then --used since cleu should be the first check for a cd
           if count then OmniDef:countstarted(unit, spell , icon) end
           if (observed and OmniDef:observed(unit, spell, icon)) then
@@ -467,12 +473,14 @@ function OmniDef:CreateIcons(unit, spec)
 	--Create Icons for the Unit to Watch and Spell Tables
 	if unit == "arena1" or unit == "arena2" or unit == "arena3" or unit == "player" then
 		local frame = icons[unit]
-		if not frame.spec then
+		if not frame.spec and spec then -- should stop if spec is not found
 			local _, name, _, _, _, _ = GetSpecializationInfoByID(spec)
 			print("Creating OmniDef: "..unit.." "..name.." ("..spec..")")
 			if unitCD == nil then unitCD = { } end
 			if unitCDalt == nil then unitCDalt = { } end
-			local j = 0
+      if unitCD[unit] == nil then unitCD[unit] = { } end
+      if unitCDalt[unit] == nil then unitCDalt[unit] = { } end
+			local j = 0; local UnitSpells = unitCD[unit]; local UnitSpellsAlt = unitCDalt[unit]
 			frame.spec = spec
 			for i, v in ipairs(Cooldowns) do
 				if v.specID  then
@@ -531,9 +539,9 @@ function OmniDef:CreateIcons(unit, spec)
 							if not v.observedalt then v.observedalt = v.observed end --always = v.observed
 							if not v.chargesalt then v.chargesalt = v.charges end
 							if not v.durationalt then v.durationalt = v.duration end
-							unitCDalt[v.spellalt] = {d = v.durationalt, o = v.observedalt, c = v.chargesalt, icon = j}
+              UnitSpellsAlt[v.spellalt] = {d = v.durationalt, o = v.observedalt, c = v.chargesalt, icon = j}
 						end
-							unitCD[v.spell] = {d = v.duration, o = v.observed, c = v.charges, icon = j}
+              UnitSpells[v.spell] = {d = v.duration, o = v.observed, c = v.charges, icon = j}
 						break
 						end
 					end
@@ -602,8 +610,10 @@ function OmniDef:SetIcons(unit)
             v:SetParent(mobilityiconsAnchor)
             v:SetHeight(mobilityHeight)
             v:SetWidth(mobilityWidth)
-            v.count:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
-            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v.count:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+            v.count:SetPoint("TOPRIGHT", 0, 6);
+            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+            v.cooldowncount:SetPoint("TOPRIGHT", 0, 6);
             v:SetFrameStrata("HIGH")
             v:SetPoint("CENTER", mobilityiconsAnchor, "CENTER")
             lastIcon = k; firstIcon = k
@@ -612,8 +622,10 @@ function OmniDef:SetIcons(unit)
             v:SetParent(mobilityicons[lastIcon])
             v:SetHeight(mobilityHeight)
             v:SetWidth(mobilityWidth)
-            v.count:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
-            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 16, "OUTLINE")
+            v.count:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+            v.count:SetPoint("TOPRIGHT", 0, 6);
+            v.cooldowncount:SetFont("Fonts\\FRIZQT__.TTF", 15, "OUTLINE")
+            v.cooldowncount:SetPoint("TOPRIGHT", 0, 6);
             v:SetFrameStrata("HIGH")
             v:SetPoint("BOTTOMLEFT", mobilityicons[lastIcon], "BOTTOMRIGHT", 0, 0) -- has to anchor to the last showing , problem is when it skips :()
             mobilityicons[firstIcon]:SetPoint("CENTER", mobilityiconsAnchor, "CENTER", -mobilityicons[firstIcon]:GetWidth()/2 * (mobilityshowing - 1), 0)
@@ -627,9 +639,10 @@ end
 
 function  OmniDef:countstarted(unit, spell , icon)
 	local frame = icons[unit]
+  local UnitSpells = unitCD[unit]; local UnitSpellsAlt = unitCDalt[unit]
 	if not frame[icon].countstarted then
-		if unitCD[spell] then frame[icon].charges = unitCD[spell].c; frame[icon].Maxcharges = unitCD[spell].c end
-		if unitCDalt[spell] then frame[icon].charges = unitCDalt[spell].c; frame[icon].Maxcharges = unitCDalt[spell].c end
+		if UnitSpells[spell] then frame[icon].charges = UnitSpells[spell].c; frame[icon].Maxcharges = UnitSpells[spell].c end
+		if UnitSpellsAlt[spell] then frame[icon].charges = UnitSpellsAlt[spell].c; frame[icon].Maxcharges = UnitSpellsAlt[spell].c end
 		frame[icon].countstarted = true
 	end
 end
